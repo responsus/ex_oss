@@ -15,8 +15,8 @@ defmodule ExOss.CDN do
   ## Adding a New CDN Provider
 
   1. Create a module implementing `ExOss.CDN.Behaviour`
-  2. Add a clause to `ExOss.Client.cdn_module/1` to map the provider atom
-  3. Add the atom to `ExOss.Client.CDN.validate_provider!/1`
+  2. In `ExOss.Client`, add a mapping from your provider atom to the module
+  3. In `ExOss.Client.CDN`, add the provider atom to the validation list
   """
 
   alias ExOss.Client.CDN, as: ClientCDN

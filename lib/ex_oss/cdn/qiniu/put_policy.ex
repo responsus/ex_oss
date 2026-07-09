@@ -85,7 +85,7 @@ defmodule ExOss.CDN.Qiniu.PutPolicy do
       iex> ExOss.CDN.Qiniu.PutPolicy.build("scope", insert_only: 1)
       %ExOss.CDN.Qiniu.PutPolicy{scope: "scope", deadline: NOW_TIME + 3600, insert_only: 1}
   """
-  @spec build(String.t(), Integer.t() | Keyword.t()) :: t
+  @spec build(String.t(), integer() | Keyword.t()) :: t
   def build(scope, expires_in_or_options)
 
   def build(scope, expires_in) when is_integer(expires_in) and expires_in > 0 do
@@ -108,7 +108,7 @@ defmodule ExOss.CDN.Qiniu.PutPolicy do
       iex> ExOss.CDN.Qiniu.PutPolicy.build("scope", 4000, scope: "other_scope")
       %ExOss.CDN.Qiniu.PutPolicy{scope: "scope", deadline: NOW_TIME + 4000}
   """
-  @spec build(String.t(), Integer.t(), Keyword.t()) :: t
+  @spec build(String.t(), integer(), Keyword.t()) :: t
   def build(scope, expires_in, opts)
       when is_integer(expires_in) and
              expires_in > 0 and is_list(opts) do
