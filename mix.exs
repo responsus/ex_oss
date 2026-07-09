@@ -27,7 +27,8 @@ defmodule ExOss.MixProject do
     [
       {:req, "~> 0.5"},
       {:ex_aws_s3, "~> 2.0"},
-      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 

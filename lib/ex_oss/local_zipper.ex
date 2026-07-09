@@ -10,6 +10,11 @@ defmodule ExOss.LocalZipper do
   """
 
   @request_timeout 30_000
+  @max_retries 3
+
+  @type download_result :: {:ok, binary()} | :error
+  @type zip_entry :: {charlist(), binary()}
+  @type zip_list_result :: {:ok, [zip_entry()]} | :error
 
   @doc """
   Downloads all files referenced in the index and returns the zip binary.
@@ -31,51 +36,62 @@ defmodule ExOss.LocalZipper do
   """
   @spec zip(binary()) :: {:ok, binary()} | {:error, :gen_file_error}
   def zip(index_path) do
-    zip_file_list =
-      index_path
-      |> do_download!()
-      |> parse_items_to_zip_file_list()
-
-    useless_zip_file_path = DateTime.utc_now() |> DateTime.to_iso8601() |> Path.expand()
-
-    case :zip.zip(useless_zip_file_path, zip_file_list, [:memory]) do
-      {:ok, {_zip_file_path, content}} -> {:ok, content}
-      _ -> {:error, :gen_file_error}
+    with {:ok, body} <- download(index_path),
+         {:ok, zip_file_list} <- build_zip_file_list(body),
+         {:ok, content} <- compress(zip_file_list) do
+      {:ok, content}
+    else
+      :error -> {:error, :gen_file_error}
     end
   end
 
-  @doc false
-  @spec parse_items_to_zip_file_list(binary()) :: [{charlist(), binary()}]
-  def parse_items_to_zip_file_list(body) do
+  @spec build_zip_file_list(binary()) :: zip_list_result()
+  defp build_zip_file_list(body) do
     body
     |> String.split("\n")
-    |> Enum.reduce([], fn text, acc ->
+    |> Enum.reduce_while({:ok, []}, fn text, {:ok, acc} ->
       case String.trim(text) do
         "" ->
-          acc
+          {:cont, {:ok, acc}}
 
-        "/url/" <> text ->
-          {url_parts, [alias_name]} =
-            String.split(text, "/alias/", parts: :infinity) |> Enum.split(-1)
-
-          alias_name = alias_name |> Base.url_decode64!() |> String.to_charlist()
-          content = url_parts |> Enum.join("/alias/") |> Base.url_decode64!() |> do_download!()
-
-          [{alias_name, content} | acc]
+        "/url/" <> rest ->
+          with {url_parts, [alias_name_encoded]} <-
+                 String.split(rest, "/alias/", parts: :infinity) |> Enum.split(-1),
+               {:ok, alias_name_binary} <- Base.url_decode64(alias_name_encoded),
+               url_encoded = Enum.join(url_parts, "/alias/"),
+               {:ok, url} <- Base.url_decode64(url_encoded),
+               {:ok, content} <- download(url) do
+            {:cont, {:ok, [{String.to_charlist(alias_name_binary), content} | acc]}}
+          else
+            _ -> {:halt, :error}
+          end
       end
     end)
   end
 
-  defp do_download!(url, retry_time \\ 0)
+  @spec compress([zip_entry()]) :: download_result()
+  defp compress(zip_file_list) do
+    path = DateTime.utc_now() |> DateTime.to_iso8601() |> String.to_charlist()
 
-  defp do_download!(_url, retry_time) when retry_time == 2 do
-    raise RuntimeError, "Download file error!"
+    case :zip.zip(path, zip_file_list, [:memory]) do
+      {:ok, {_path, content}} -> {:ok, content}
+      _ -> :error
+    end
   end
 
-  defp do_download!(url, retry_time) do
+  @spec download(binary()) :: download_result()
+  defp download(url, retry_time \\ 0)
+
+  defp download(_url, @max_retries), do: :error
+
+  defp download(url, retry_time) do
     case Req.get(url, receive_timeout: @request_timeout) do
-      {:ok, %Req.Response{status: code, body: body}} when code >= 200 and code <= 299 -> body
-      _ -> do_download!(url, retry_time + 1)
+      {:ok, %Req.Response{status: code, body: body}}
+      when is_integer(code) and code >= 200 and code <= 299 ->
+        {:ok, body}
+
+      _ ->
+        download(url, retry_time + 1)
     end
   end
 end
