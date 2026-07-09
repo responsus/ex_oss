@@ -23,7 +23,7 @@ defmodule ExOss.CDN.Behaviour do
         end
       end
 
-  Then register the adapter in `ExOss.Client.cdn_module/1`.
+  Then register the adapter in `ExOss.Client` (the provider-to-module mapping).
   """
 
   alias ExOss.Client.Client
