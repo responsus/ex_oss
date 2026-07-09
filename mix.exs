@@ -13,7 +13,14 @@ defmodule ExOss.MixProject do
       deps: deps(),
       name: "ExOss",
       docs: docs(),
-      package: package()
+      package: package(),
+      aliases: aliases()
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [check: :test]
     ]
   end
 
@@ -80,6 +87,18 @@ defmodule ExOss.MixProject do
           ExOss.Utils,
           ExOss.LocalZipper
         ]
+      ]
+    ]
+  end
+
+  defp aliases do
+    [
+      check: [
+        "format --check-formatted",
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "test",
+        "dialyzer"
       ]
     ]
   end
