@@ -41,6 +41,7 @@ defmodule ExOss.MixProject do
 
   defp package do
     [
+      description: "A unified S3-compatible object storage library for Elixir with multi-CDN support.",
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url}
     ]
