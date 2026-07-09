@@ -20,7 +20,7 @@ Add `ex_oss` to your dependencies:
 ```elixir
 def deps do
   [
-    {:ex_oss, "~> 0.1.0"}
+    {:ex_oss, "~> 1.0"}
   ]
 end
 ```
